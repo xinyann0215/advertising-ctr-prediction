@@ -1,53 +1,66 @@
 # Advertising Click-Through Rate Prediction
 
-## Overview
-This project predicts whether users will click on online advertisements using machine learning models and behavioral features.
+Predicting whether a user will click on a display ad, using the [Avazu CTR Prediction dataset](https://www.kaggle.com/c/avazu-ctr-prediction) (404,290 impressions).
 
-The analysis includes exploratory data analysis, feature preprocessing, model training, model comparison, and feature importance analysis.
+## Why this is harder than a standard classification problem
 
-## Dataset
-The dataset contains **404,290 advertising impressions** with user, device, site, app, and advertisement-related features.
+Two things make CTR prediction different from a generic tabular classification task, and this project is
+built around both of them:
 
-## Tools & Technologies
-- Python
-- Pandas
-- Matplotlib
-- Scikit-learn
-- XGBoost
+1. **Extreme class imbalance.** Click rate is far below 50%, so a naive model can look "accurate" while
+   never actually ranking likely clicks correctly. This project uses `class_weight` / `scale_pos_weight`
+   during training and reports **PR-AUC** alongside ROC-AUC, since PR-AUC is far more sensitive to
+   imbalanced-class performance.
+2. **High-cardinality identifier features.** Fields like `site_id`, `app_id`, `device_id`, and `device_ip`
+   can have tens of thousands of unique values. One-hot encoding them is impractical; this project uses
+   **frequency encoding** (fit on the training set only, to avoid leakage) so this signal isn't thrown away.
 
-## Modeling
-Two machine learning models were evaluated:
+## Approach
 
-- Logistic Regression
-- XGBoost
-
-Categorical features were transformed using one-hot encoding, and the dataset was split into training and testing sets.
+- Exploratory analysis of CTR by banner position and hour of day
+- Low-cardinality categorical features → one-hot encoding
+- High-cardinality identifier features → frequency encoding
+- Baseline: Logistic Regression with `class_weight="balanced"`
+- Main model: XGBoost with `scale_pos_weight` set from the training class balance
+- A small randomized hyperparameter search (3-fold CV on ROC-AUC) to tune the XGBoost model
+- Evaluation on a held-out test set using ROC-AUC, PR-AUC, and Log Loss
+- Feature importance analysis to identify which attributes are most predictive of clicks
 
 ## Results
 
-| Model | ROC-AUC | Log Loss |
-|---|---:|---:|
-| Logistic Regression | 0.7059 | 0.4155 |
-| XGBoost | **0.7193** | **0.4102** |
+| Model | ROC-AUC | PR-AUC | Log Loss |
+|---|---:|---:|---:|
+| Logistic Regression (balanced) | _fill in after running_ | _fill in_ | _fill in_ |
+| XGBoost (default params, imbalance-aware) | _fill in_ | _fill in_ | _fill in_ |
+| XGBoost (tuned) | _fill in_ | _fill in_ | _fill in_ |
 
-XGBoost achieved the strongest performance, improving ROC-AUC while reducing log loss compared with the Logistic Regression baseline.
+*(Update this table with your actual numbers from the notebook, then delete this note.)*
 
-## Key Findings
-- XGBoost outperformed the Logistic Regression baseline.
-- Nonlinear relationships and feature interactions improved CTR prediction.
-- Feature importance analysis was used to identify influential predictors of advertisement clicks.
+## Repo structure
 
-## Project Workflow
-1. Data cleaning
-2. Exploratory data analysis
-3. Feature engineering
-4. One-hot encoding
-5. Logistic Regression baseline
-6. XGBoost modeling
-7. Model evaluation
-8. Feature importance analysis
+```
+.
+├── advertising_ctr_prediction.ipynb   # main notebook: EDA, feature engineering, modeling, evaluation
+├── data/                              # not committed — put filtered_train.csv here (see Data below)
+├── requirements.txt
+└── README.md
+```
 
-## Repository
-The complete analysis and model development process can be found in:
+## Data
 
-`advertising_ctr_prediction.ipynb`
+This project uses a filtered subset of the [Avazu CTR Prediction](https://www.kaggle.com/c/avazu-ctr-prediction)
+dataset from Kaggle. Download `train.csv` from Kaggle, place it (or your filtered subset) at
+`data/filtered_train.csv`, and it will be picked up by the `DATA_PATH` variable in the notebook.
+The raw data is not committed to this repo due to size and Kaggle's terms of use.
+
+## How to run
+
+```bash
+pip install -r requirements.txt
+jupyter notebook advertising_ctr_prediction.ipynb
+```
+
+## Key takeaway
+
+*(Write 2-3 sentences here once you've run the notebook: which features/attributes ended up most predictive
+of clicks, and what that implies for ad placement or targeting decisions.)*
